@@ -7,6 +7,8 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.Scanner;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+
 @Configuration
 public class ConsoleConfiguration {
 
@@ -14,6 +16,11 @@ public class ConsoleConfiguration {
     private boolean testMode;
 
     @Bean
+    @ConditionalOnProperty(
+            name = "app.test-mode",
+            havingValue = "false",
+            matchIfMissing = true
+    )
     public CommandLineRunner commandScanner(
             CommandProcessor commandProcessor
     ) {
