@@ -10,6 +10,9 @@ import ru.stanislav.NauJava3.repository.criteria.FinancialTransactionCriteriaRep
 import java.math.BigDecimal;
 import java.util.List;
 
+import org.springframework.data.rest.core.annotation.RepositoryRestResource;
+
+@RepositoryRestResource(path = "transactions")
 public interface FinancialTransactionRepository
         extends CrudRepository<FinancialTransaction, Long>,
         FinancialTransactionCriteriaRepository {
