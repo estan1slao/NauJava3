@@ -3,6 +3,10 @@ package ru.stanislav.NauJava3.entity;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Column;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name = "app_users")
 public class AppUser {
@@ -25,6 +29,9 @@ public class AppUser {
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "role")
+    private String role = "USER";
 
     protected AppUser() {
     }
@@ -52,5 +59,18 @@ public class AppUser {
 
     public String getFullName() {
         return fullName;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+
+    @JsonIgnore
+    public String getPasswordHash() {
+        return passwordHash;
     }
 }
