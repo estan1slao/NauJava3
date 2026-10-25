@@ -1,0 +1,79 @@
+Enum transaction_type {
+  INCOME
+  EXPENSE
+}
+
+Enum wallet_type {
+  CASH
+  BANK_ACCOUNT
+  CARD
+  ELECTRONIC
+}
+
+Enum budget_period {
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+Table app_users {
+  id bigint [pk, increment]
+  username varchar(50) [not null, unique]
+  email varchar(150) [not null, unique]
+  password_hash varchar(255) [not null]
+  full_name varchar(150) [not null]
+  created_at timestamp [not null]
+}
+
+Table wallets {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  name varchar(100) [not null]
+  currency varchar(3) [not null]
+  wallet_type wallet_type [not null]
+  description varchar(255)
+  opening_balance decimal(15,2) [not null, default: 0]
+  created_at timestamp [not null]
+}
+
+Table categories {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  name varchar(100) [not null]
+  type transaction_type [not null]
+  description varchar(255)
+  color varchar(7)
+  is_active boolean [not null, default: true]
+}
+
+Table transactions {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  wallet_id bigint [not null]
+  category_id bigint [not null]
+  amount decimal(15,2) [not null]
+  type transaction_type [not null]
+  description varchar(255)
+  transaction_date date [not null]
+  created_at timestamp [not null]
+}
+
+Table budgets {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  category_id bigint [not null]
+  name varchar(100) [not null]
+  limit_amount decimal(15,2) [not null]
+  period budget_period [not null]
+  start_date date [not null]
+  end_date date [not null]
+  alert_percent int [not null, default: 80]
+}
+
+Ref: app_users.id < wallets.user_id
+Ref: app_users.id < categories.user_id
+Ref: app_users.id < transactions.user_id
+Ref: wallets.id < transactions.wallet_id
+Ref: categories.id < transactions.category_id
+Ref: app_users.id < budgets.user_id
+Ref: categories.id < budgets.category_id
