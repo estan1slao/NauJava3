@@ -1,0 +1,275 @@
+
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генерация отчётов</title>
+
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 35px 20px;
+            font-family: Arial, sans-serif;
+            background: #f3f5f9;
+            color: #252b36;
+        }
+
+        .container {
+            max-width: 950px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+        }
+
+        .description {
+            color: #667085;
+            margin-bottom: 25px;
+        }
+
+        .panel {
+            background: white;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 7px;
+            background: #2864dc;
+            color: white;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4fb5;
+        }
+
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        #status {
+            margin-top: 18px;
+            font-weight: bold;
+        }
+
+        #reportId {
+            color: #667085;
+            margin-top: 8px;
+        }
+
+        #reportFrame {
+            width: 100%;
+            min-height: 550px;
+            border: 1px solid #dce1e8;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .error {
+            color: #d92d20;
+        }
+
+        .success {
+            color: #16803c;
+        }
+
+        .progress {
+            color: #b7791f;
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+
+    <h1>Генерация финансовых отчётов</h1>
+
+    <p class="description">
+        Создание отчёта выполняется асинхронно.
+        После запуска можно отслеживать статус выполнения и просмотреть результат.
+    </p>
+
+    <div class="panel">
+        <h2>Создание отчёта</h2>
+
+        <p>
+            Нажмите кнопку, чтобы запустить формирование отчёта
+            по пользователям и финансовым операциям.
+        </p>
+
+        <button id="createButton" onclick="createReport()">
+            Создать отчёт
+        </button>
+
+        <div id="status">Ожидание запуска.</div>
+        <div id="reportId"></div>
+    </div>
+
+    <div id="resultPanel" class="panel hidden">
+        <h2>Отчёт готов</h2>
+
+        <p>
+            Отчёт успешно сформирован. Для просмотра откройте его по ссылке:
+        </p>
+
+        <a id="reportLink"
+           href="#"
+           target="_blank"
+           rel="noopener noreferrer">
+            Открыть отчёт в новой вкладке
+        </a>
+    </div>
+
+</div>
+
+<script>
+    const createButton = document.getElementById("createButton");
+    const statusElement = document.getElementById("status");
+    const reportIdElement = document.getElementById("reportId");
+    const resultPanel = document.getElementById("resultPanel");
+    const reportLink = document.getElementById("reportLink");
+
+    const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+
+    let pollingTimer = null;
+
+    function setStatus(message, className = "") {
+        statusElement.textContent = message;
+        statusElement.className = className;
+    }
+
+    async function createReport() {
+        if (pollingTimer !== null) {
+            clearTimeout(pollingTimer);
+            pollingTimer = null;
+        }
+
+        createButton.disabled = true;
+        resultPanel.classList.add("hidden");
+        reportLink.href = "#";
+
+        setStatus("Отправка запроса на создание отчёта...", "progress");
+        reportIdElement.textContent = "";
+
+        try {
+            const headers = {};
+
+            if (csrfToken && csrfHeader) {
+                headers[csrfHeader] = csrfToken;
+            }
+
+            const response = await fetch("/api/reports", {
+                method: "POST",
+                headers: headers
+            });
+
+            const responseText = await response.text();
+
+            if (!response.ok) {
+                throw new Error(responseText || `Ошибка HTTP ${response.status}`);
+            }
+
+            let data;
+
+            try {
+                data = JSON.parse(responseText);
+            } catch {
+                data = responseText;
+            }
+
+            let reportId;
+
+            if (typeof data === "number" || typeof data === "string") {
+                reportId = data;
+            } else {
+                reportId = data.id ?? data.reportId;
+            }
+
+            if (!reportId) {
+                throw new Error("Сервер не вернул идентификатор отчёта.");
+            }
+
+            reportIdElement.textContent = "ID отчёта: " + reportId;
+
+            setStatus("Отчёт создан. Начинается формирование...", "progress");
+
+            checkReport(reportId);
+
+        } catch (error) {
+            setStatus("Ошибка: " + error.message, "error");
+            createButton.disabled = false;
+        }
+    }
+
+    async function checkReport(reportId) {
+        try {
+            const response = await fetch(
+                "/api/reports/" + encodeURIComponent(reportId)
+            );
+
+            if (response.status === 202) {
+                setStatus("Отчёт формируется. Ожидание результата...", "progress");
+
+                pollingTimer = setTimeout(() => {
+                    checkReport(reportId);
+                }, 1500);
+
+                return;
+            }
+
+            if (response.status === 404) {
+                throw new Error("Отчёт не найден.");
+            }
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText || `Ошибка HTTP ${response.status}`);
+            }
+
+            const contentType = response.headers.get("content-type") || "";
+
+            if (!contentType.includes("text/html")) {
+                const responseText = await response.text();
+                throw new Error(
+                    "Сервер вернул неожиданный формат ответа: " + responseText
+                );
+            }
+
+            const reportUrl = "/api/reports/" + encodeURIComponent(reportId);
+
+            reportLink.href = reportUrl;
+            resultPanel.classList.remove("hidden");
+
+            setStatus("Отчёт успешно сформирован!", "success");
+            createButton.disabled = false;
+
+        } catch (error) {
+            setStatus("Ошибка при проверке отчёта: " + error.message, "error");
+            createButton.disabled = false;
+        }
+    }
+</script>
+
+</body>
+</html>
