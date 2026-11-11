@@ -34,3 +34,36 @@
 
 `http://localhost:8080/api/reports/{id}`
 
+
+
+## Практическая работа №8. Автоматизированное тестирование
+
+Добавлены unit-тесты сервисов регистрации и финансовых операций (JUnit + Mockito),
+API-тесты отчётов (RestAssured) и UI-тесты авторизации и выхода (Selenium).
+
+Тесты используют отдельную базу H2 из `src/test/resources/application.properties`.
+Рабочая база PostgreSQL не требуется для тестирования.
+
+Запуск unit- и API-тестов, а также ранее созданных интеграционных тестов:
+
+```powershell
+.\mvnw.cmd clean test
+```
+
+UI-тесты требуют установленный Chrome либо Microsoft Edge и соответствующий WebDriver. Selenium Manager пытается подобрать драйвер автоматически.
+Для запуска всех тестов, включая Selenium:
+
+```powershell
+.\mvnw.cmd clean test -DrunSeleniumTests=true
+```
+
+Selenium проверяет вход с правильным паролем, выход из системы
+и ошибку при неправильном пароле. Тестовый пользователь создаётся автоматически.
+
+Отчёты о выполнении JUnit доступны в `target/surefire-reports`.
+
+Для запуска Selenium с Microsoft Edge:
+
+```powershell
+.\mvnw.cmd clean test -DrunSeleniumTests=true -Dselenium.browser=edge
+```
