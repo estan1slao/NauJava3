@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Регистрация</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 420px;
+            margin: 50px auto;
+            padding: 0 20px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        input, button {
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        .message {
+            color: #b00020;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Регистрация</h1>
+
+<p class="message"
+   th:if="${message}"
+   th:text="${message}">
+    Сообщение об ошибке
+</p>
+
+<form th:action="@{/registration}" method="post">
+
+    <label for="username">Логин</label>
+    <input id="username"
+           type="text"
+           name="username"
+           required
+           minlength="3"
+           autocomplete="username">
+
+    <label for="email">Электронная почта</label>
+    <input id="email"
+           type="email"
+           name="email"
+           autocomplete="email">
+
+    <label for="fullName">Имя</label>
+    <input id="fullName"
+           type="text"
+           name="fullName"
+           autocomplete="name">
+
+    <label for="password">Пароль</label>
+    <input id="password"
+           type="password"
+           name="password"
+           required
+           minlength="8"
+           autocomplete="new-password">
+
+    <button type="submit">Зарегистрироваться</button>
+</form>
+
+<p>
+    Уже зарегистрированы?
+    <a th:href="@{/login}">Войти</a>
+</p>
+
+</body>
+</html>
